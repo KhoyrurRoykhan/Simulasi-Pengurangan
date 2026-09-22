@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Simulasi Pengurangan Ratusan - SD Kelas 3</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#0284c7',
+                            lightBlue: '#f0f9ff',
+                            yellow: '#f59e0b',
+                            lightYellow: '#fef3c7',
+                            green: '#10b981',
+                            lightGreen: '#ecfdf5',
+                            red: '#ef4444',
+                            lightRed: '#fef2f2',
+                            purple: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        nunito: ['Nunito', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4;
+            background-image: radial-gradient(#dcfce7 2px, transparent 2px);
+            background-size: 20px 20px;
+        }
+
+        .font-fredoka { font-family: 'Fredoka', sans-serif; }
+
+        /* Strike-through animation for borrowed numbers */
+        .strike-through {
+            position: relative;
+            color: #94a3b8 !important;
+        }
+        .strike-through::after {
+            content: '';
+            position: absolute;
+            top: 48%;
+            left: -15%;
+            width: 130%;
+            height: 4px;
+            background-color: #ef4444;
+            transform: rotate(-25deg);
+            border-radius: 999px;
+            animation: strikeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes strikeIn {
+            from { width: 0%; opacity: 0; }
+            to { width: 130%; opacity: 1; }
+        }
+
+        /* Number Box Animations */
+        .digit-pop {
+            animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Pulse glow for active working step */
+        .active-column {
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.4);
+            border-color: #0284c7 !important;
+        }
+
+        /* Mobile Bottom Sheet Padding */
+        .pb-mobile-nav {
+            padding-bottom: 90px;
+        }
+
+        /* Hide scrollbars for clean mobile horizontal pill navigation */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col pb-mobile-nav select-none">
+
+    <!-- Top Mobile App Bar -->
+    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-emerald-200 shadow-sm">
+        <div class="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shadow-md font-fredoka">
+                    <i class="fa-solid fa-turtle"></i>
+                </div>
+                <div>
+                    <h1 class="font-fredoka text-lg font-bold text-slate-800 leading-tight">
+                        Simulasi Pengurangan
+                    </h1>
+                    <p class="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full inline-block">
+                        Kelas 3 SD • Teknik Meminjam
+                    </p>
+                </div>
+            </div>
+
+            <!-- Sound Toggle Button -->
+            <button id="soundToggleBtn" onclick="toggleSound()" class="w-10 h-10 rounded-2xl bg-amber-100 border-2 border-amber-300 text-amber-800 flex items-center justify-center text-base font-bold transition active:scale-90 shadow-sm">
+                <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area Container -->
+    <main class="max-w-md mx-auto px-4 pt-3 flex-1 w-full space-y-3">
+
+        <!-- Card 1: Input & Presets -->
+        <section class="bg-white rounded-3xl p-3.5 border-2 border-emerald-100 shadow-sm">
+            
+            <!-- Quick Preset Pill Selectors -->
+            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2">
+                <span class="text-xs font-bold text-slate-400 shrink-0 mr-1"><i class="fa-solid fa-bolt text-amber-400"></i> Contoh:</span>
+                <button onclick="applyPreset(422, 276)" class="preset-btn bg-slate-100 hover:bg-sky-100 active:bg-sky-200 text-slate-700 font-bold text-xs px-3 py-1.5 rounded-xl shrink-0 transition border border-slate-200">
+                    422 - 276
+                </button>
+                <button onclick="applyPreset(731, 482)" class="preset-btn bg-slate-100 hover:bg-sky-100 active:bg-sky-200 text-slate-700 font-bold text-xs px-3 py-1.5 rounded-xl shrink-0 transition border border-slate-200">
+                    731 - 482
+                </button>
+                <button onclick="applyPreset(509, 264)" class="preset-btn bg-slate-100 hover:bg-sky-100 active:bg-sky-200 text-slate-700 font-bold text-xs px-3 py-1.5 rounded-xl shrink-0 transition border border-slate-200">
+                    509 - 264
+                </button>
+                <button onclick="applyPreset(876, 438)" class="preset-btn bg-slate-100 hover:bg-sky-100 active:bg-sky-200 text-slate-700 font-bold text-xs px-3 py-1.5 rounded-xl shrink-0 transition border border-slate-200">
+                    876 - 438
+                </button>
+                <button onclick="applyRandomPreset()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs px-3 py-1.5 rounded-xl shrink-0 transition border border-amber-300">
+                    🎲 Acak
+                </button>
+            </div>
+
+            <!-- Custom Number Inputs Row -->
+            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center gap-1.5 flex-1">
+                    <div class="flex-1">
+                        <label class="text-[10px] font-bold text-slate-400 block uppercase tracking-wide">Yang Dikurangi</label>
+                        <input type="number" id="numA" value="422" min="100" max="999" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-1.5 text-center font-fredoka text-lg font-bold text-slate-800 focus:bg-white focus:border-sky-400 focus:outline-none transition">
+                    </div>
+                    <span class="text-xl font-bold text-slate-400 mt-3">-</span>
+                    <div class="flex-1">
+                        <label class="text-[10px] font-bold text-slate-400 block uppercase tracking-wide">Pengurang</label>
+                        <input type="number" id="numB" value="276" min="100" max="999" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-1.5 text-center font-fredoka text-lg font-bold text-slate-800 focus:bg-white focus:border-sky-400 focus:outline-none transition">
+                    </div>
+                </div>
+
+                <button onclick="startCustomSim()" class="mt-3.5 bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-fredoka font-bold text-sm px-4 py-2 rounded-xl shadow-md transition shrink-0 flex items-center gap-1.5">
+                    <span>Mulai</span>
+                    <i class="fa-solid fa-play text-xs"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Card 2: Interactive Vertical Math Board -->
+        <section class="bg-amber-50/80 rounded-3xl p-4 border-2 border-amber-200 shadow-sm relative overflow-hidden">
+            
+            <!-- Step Status Badge & Auto Play Indicator -->
+            <div class="flex items-center justify-between mb-3">
+                <span id="stepBadge" class="bg-sky-500 text-white font-fredoka text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                    Langkah 0 dari 3
+                </span>
+                
+                <div class="flex items-center gap-1">
+                    <span id="dot1" class="w-2.5 h-2.5 rounded-full bg-slate-300 transition-all"></span>
+                    <span id="dot2" class="w-2.5 h-2.5 rounded-full bg-slate-300 transition-all"></span>
+                    <span id="dot3" class="w-2.5 h-2.5 rounded-full bg-slate-300 transition-all"></span>
+                </div>
+            </div>
+
+            <!-- Vertical Math Layout Grid (3 Columns for R - P - S) -->
+            <div class="bg-white/90 backdrop-blur rounded-2xl p-4 border border-amber-200/80 shadow-inner">
+                
+                <!-- Column Labels Header -->
+                <div class="grid grid-cols-3 gap-2 text-center text-[11px] font-extrabold uppercase tracking-wider mb-2">
+                    <div id="colLabel3" class="bg-sky-100 text-sky-800 py-1 rounded-lg transition">Ratusan</div>
+                    <div id="colLabel2" class="bg-amber-100 text-amber-800 py-1 rounded-lg transition">Puluhan</div>
+                    <div id="colLabel1" class="bg-emerald-100 text-emerald-800 py-1 rounded-lg transition">Satuan</div>
+                </div>
+
+                <!-- Upper Row: Borrowed / Transformed Values -->
+                <div class="grid grid-cols-3 gap-2 text-center font-fredoka font-bold text-lg min-h-[36px] items-center">
+                    <div id="borrow3" class="text-rose-500 transition-all"></div>
+                    <div id="borrow2" class="text-rose-500 transition-all"></div>
+                    <div id="borrow1" class="text-rose-500 transition-all"></div>
+                </div>
+
+                <!-- Middle Row 1: Minuend A (Angka Utama) -->
+                <div class="grid grid-cols-3 gap-2 text-center font-fredoka text-3xl font-extrabold text-slate-800 py-1">
+                    <div id="digitA3" class="transition-all">4</div>
+                    <div id="digitA2" class="transition-all">2</div>
+                    <div id="digitA1" class="transition-all">2</div>
+                </div>
+
+                <!-- Middle Row 2: Subtrahend B (Angka Pengurang) -->
+                <div class="grid grid-cols-3 gap-2 text-center font-fredoka text-3xl font-extrabold text-slate-800 py-1 relative border-b-4 border-slate-800">
+                    <span class="absolute -left-1 top-1 text-2xl text-sky-600 font-bold">-</span>
+                    <div id="digitB3">2</div>
+                    <div id="digitB2">7</div>
+                    <div id="digitB1">6</div>
+                </div>
+
+                <!-- Bottom Row: Answer Result Digits -->
+                <div class="grid grid-cols-3 gap-2 text-center font-fredoka text-3xl font-extrabold text-emerald-600 pt-2 min-h-[52px]">
+                    <div id="ans3" class="opacity-0 transition-all"></div>
+                    <div id="ans2" class="opacity-0 transition-all"></div>
+                    <div id="ans1" class="opacity-0 transition-all"></div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- Card 3: Mascot Speech & Explanation -->
+        <section class="bg-white rounded-3xl p-4 border-2 border-emerald-100 shadow-sm flex items-start gap-3">
+            <!-- Mascot Icon -->
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl shrink-0 shadow-inner mt-0.5">
+                <i id="mascotIcon" class="fa-solid fa-face-smile"></i>
+            </div>
+
+            <!-- Speech Bubble Details -->
+            <div class="flex-1">
+                <h3 id="stepTitle" class="font-fredoka text-base font-bold text-slate-800 leading-tight">
+                    Siap Memulai Simulasi!
+                </h3>
+                <p id="stepDesc" class="text-xs text-slate-600 leading-relaxed mt-1">
+                    Tekan tombol <strong class="text-sky-600">"Langkah Berikutnya"</strong> di bawah untuk melihat proses pengurangan bersusun secara bertahap.
+                </p>
+
+                <!-- Active Step Math Formula Tag -->
+                <div id="stepFormula" class="mt-2 hidden">
+                    <span class="inline-block bg-emerald-100 text-emerald-800 font-fredoka font-bold text-xs px-2.5 py-1 rounded-lg border border-emerald-200">
+                        12 - 6 = 6
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visual Base-10 Blocks Summary Bar -->
+        <section id="visualBlocksBar" class="bg-sky-50 rounded-2xl p-2.5 border border-sky-200 text-center text-xs font-bold flex justify-around items-center gap-1">
+            <span class="text-slate-400 italic">Visualisasi balok akan diperbarui setiap langkah...</span>
+        </section>
+
+    </main>
+
+    <!-- Fixed Bottom Action Controls Bar (Thumb-Friendly on Mobile) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t-2 border-slate-200 p-3 z-50 shadow-lg">
+        <div class="max-w-md mx-auto flex items-center gap-2">
+            
+            <!-- Previous Button -->
+            <button id="btnPrev" onclick="stepSim(-1)" disabled class="w-12 h-12 rounded-2xl bg-slate-100 border-2 border-slate-200 text-slate-400 font-bold flex items-center justify-center text-lg disabled:opacity-40 disabled:cursor-not-allowed transition active:scale-90">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <!-- Auto Play / Reset Button -->
+            <button id="btnAuto" onclick="toggleAutoPlay()" class="h-12 px-3 rounded-2xl bg-amber-100 border-2 border-amber-300 text-amber-900 font-fredoka font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 shrink-0">
+                <i class="fa-solid fa-play text-xs" id="autoIcon"></i>
+                <span id="autoText">Putar Otonom</span>
+            </button>
+
+            <!-- Next Step Button (Primary Action) -->
+            <button id="btnNext" onclick="stepSim(1)" class="flex-1 h-12 rounded-2xl bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-fredoka font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+                <span id="nextText">Langkah Berikutnya</span>
+                <i class="fa-solid fa-arrow-right text-xs" id="nextIcon"></i>
+            </button>
+
+        </div>
+    </nav>
+
+    <!-- Modal Dialog for Notifications -->
+    <div id="appModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center border-4 border-amber-300 transform transition-all scale-95 opacity-0" id="appModalContent">
+            <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl shadow-inner">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <h3 id="modalTitle" class="font-fredoka text-lg text-slate-800 font-bold mb-1">Perhatian</h3>
+            <p id="modalBody" class="text-xs text-slate-600 mb-4 leading-relaxed">Angka pertama harus lebih besar dari angka kedua!</p>
+            <button onclick="closeModal()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-fredoka px-6 py-2.5 rounded-xl text-sm font-bold shadow-md transition w-full active:scale-95">
+                Mengerti
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. AUDIO SYNTHESIZER (Web Audio API - Fast, Mobile Compatible)
+           ========================================================================== */
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggleBtn');
+            const icon = document.getElementById('soundIcon');
+            if (soundEnabled) {
+                btn.className = "w-10 h-10 rounded-2xl bg-amber-100 border-2 border-amber-300 text-amber-800 flex items-center justify-center text-base font-bold transition active:scale-90 shadow-sm";
+                icon.className = 'fa-solid fa-volume-high';
+                playSound('pop');
+            } else {
+                btn.className = "w-10 h-10 rounded-2xl bg-slate-100 border-2 border-slate-300 text-slate-500 flex items-center justify-center text-base font-bold transition active:scale-90 shadow-sm";
+                icon.className = 'fa-solid fa-volume-xmark';
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'pop') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(450, now);
+                    osc.frequency.exponentialRampToValueAtTime(850, now + 0.07);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
+                    osc.start(now);
+                    osc.stop(now + 0.07);
+                } else if (type === 'borrow') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(600, now + 0.15);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'finish') {
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(freq, now + i * 0.09);
+                        g.gain.setValueAtTime(0.2, now + i * 0.09);
+                        g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.09 + 0.2);
+                        o.start(now + i * 0.09);
+                        o.stop(now + i * 0.09 + 0.2);
+                    });
+                }
+            } catch (e) {
+                console.log('Audio error:', e);
+            }
+        }
+
+        /* ==========================================================================
+           2. SIMULATION ENGINE LOGIC
+           ========================================================================== */
+        let simState = {
+            num1: 422,
+            num2: 276,
+            currentStep: 0,
+            autoPlaying: false,
+            autoTimer: null,
+            steps: []
+        };
+
+        function calculateSteps(a, b) {
+            const a3 = Math.floor(a / 100), a2 = Math.floor((a % 100) / 10), a1 = a % 10;
+            const b3 = Math.floor(b / 100), b2 = Math.floor((b % 100) / 10), b1 = b % 10;
+
+            let c3 = a3, c2 = a2, c1 = a1;
+            let bor1 = '', bor2 = '', bor3 = '';
+            let strike1 = false, strike2 = false, strike3 = false;
+
+            const steps = [];
+
+            // Step 0: Overview
+            steps.push({
+                stepIndex: 0,
+                badge: "Persiapan",
+                title: "Siap Memulai Simulasi!",
+                desc: `Kita akan menghitung <strong>${a} - ${b}</strong> dengan teknik meminjam.`,
+                icon: "fa-face-smile",
+                formula: null,
+                activeCol: 0,
+                a3, a2, a1, b3, b2, b1,
+                bor1: '', bor2: '', bor3: '',
+                strike1: false, strike2: false, strike3: false,
+                ans1: '', ans2: '', ans3: '',
+                visual: { r: a3, p: a2, s: a1 }
+            });
+
+            // Step 1: Units Column
+            let formula1 = "";
+            let desc1 = "";
+            if (c1 < b1) {
+                if (c2 > 0) {
+                    c2 -= 1;
+                    bor2 = c2;
+                    strike2 = true;
+                    c1 += 10;
+                    bor1 = c1;
+                    strike1 = true;
+                    desc1 = `Satuan <strong class="text-rose-500">${a1}</strong> < <strong>${b1}</strong> (tidak cukup). Pinjam 1 puluhan dari puluhan (${a2}). Puluhan tinggal <span class="text-rose-500 font-bold">${c2}</span>, Satuan jadi <span class="text-emerald-600 font-bold">${c1}</span>.`;
+                } else {
+                    // Borrow across zero
+                    c3 -= 1;
+                    bor3 = c3;
+                    strike3 = true;
+                    c2 = 9;
+                    bor2 = 9;
+                    strike2 = true;
+                    c1 += 10;
+                    bor1 = c1;
+                    strike1 = true;
+                    desc1 = `Satuan <strong class="text-rose-500">${a1}</strong> < <strong>${b1}</strong>. Puluhan 0, jadi pinjam dari ratusan (${a3}). Ratusan tinggal <span class="text-rose-500 font-bold">${c3}</span>, Puluhan jadi <span class="text-amber-600 font-bold">9</span>, Satuan jadi <span class="text-emerald-600 font-bold">${c1}</span>.`;
+                }
+            } else {
+                desc1 = `Satuan <strong>${c1}</strong> cukup dikurangi <strong>${b1}</strong>. Langsung hitung pengurangan satuan.`;
+            }
+
+            const res1 = c1 - b1;
+            formula1 = `${c1} - ${b1} = ${res1}`;
+
+            steps.push({
+                stepIndex: 1,
+                badge: "Langkah 1: Satuan",
+                title: "Kurangkan Kolom Satuan",
+                desc: desc1,
+                icon: "fa-1",
+                formula: formula1,
+                activeCol: 1,
+                a3, a2, a1, b3, b2, b1,
+                bor1, bor2, bor3,
+                strike1, strike2, strike3,
+                ans1: res1, ans2: '', ans3: '',
+                visual: { r: bor3 !== '' ? bor3 : c3, p: bor2 !== '' ? bor2 : c2, s: c1 }
+            });
+
+            // Step 2: Tens Column
+            let formula2 = "";
+            let desc2 = "";
+            if (c2 < b2) {
+                c3 -= 1;
+                bor3 = c3;
+                strike3 = true;
+                c2 += 10;
+                bor2 = c2;
+                strike2 = true;
+                desc2 = `Puluhan tersisa <strong class="text-rose-500">${bor2 - 10}</strong> < <strong>${b2}</strong> (tidak cukup). Pinjam 1 ratusan dari ratusan. Ratusan tinggal <span class="text-rose-500 font-bold">${c3}</span>, Puluhan jadi <span class="text-amber-600 font-bold">${c2}</span>.`;
+            } else {
+                desc2 = `Puluhan tersisa <strong>${c2}</strong> cukup dikurangi <strong>${b2}</strong>. Langsung kurangkan puluhan.`;
+            }
+
+            const res2 = c2 - b2;
+            formula2 = `${c2} - ${b2} = ${res2}`;
+
+            steps.push({
+                stepIndex: 2,
+                badge: "Langkah 2: Puluhan",
+                title: "Kurangkan Kolom Puluhan",
+                desc: desc2,
+                icon: "fa-2",
+                formula: formula2,
+                activeCol: 2,
+                a3, a2, a1, b3, b2, b1,
+                bor1, bor2, bor3,
+                strike1, strike2, strike3,
+                ans1: res1, ans2: res2, ans3: '',
+                visual: { r: bor3 !== '' ? bor3 : c3, p: c2, s: c1 }
+            });
+
+            // Step 3: Hundreds Column
+            const res3 = c3 - b3;
+            const formula3 = `${c3} - ${b3} = ${res3}`;
+            const desc3 = `Ratusan tersisa <strong>${c3}</strong> dikurangi <strong>${b3}</strong> = <strong class="text-emerald-600">${res3}</strong>.<br><br><strong>Selesai! 🎉 Hasilnya: ${a - b}</strong>`;
+
+            steps.push({
+                stepIndex: 3,
+                badge: "Langkah 3: Ratusan",
+                title: "Kurangkan Kolom Ratusan (Selesai!)",
+                desc: desc3,
+                icon: "fa-circle-check",
+                formula: formula3,
+                activeCol: 3,
+                a3, a2, a1, b3, b2, b1,
+                bor1, bor2, bor3,
+                strike1, strike2, strike3,
+                ans1: res1, ans2: res2, ans3: res3,
+                visual: { r: c3, p: c2, s: c1 }
+            });
+
+            return steps;
+        }
+
+        function startCustomSim() {
+            const n1 = parseInt(document.getElementById('numA').value) || 422;
+            const n2 = parseInt(document.getElementById('numB').value) || 276;
+
+            if (n1 <= n2) {
+                showModal("Perhatian", "Angka pertama harus lebih besar dari angka pengurang!");
+                return;
+            }
+
+            stopAutoPlay();
+            simState.num1 = n1;
+            simState.num2 = n2;
+            simState.steps = calculateSteps(n1, n2);
+            simState.currentStep = 0;
+            renderStep();
+        }
+
+        function applyPreset(a, b) {
+            document.getElementById('numA').value = a;
+            document.getElementById('numB').value = b;
+            startCustomSim();
+        }
+
+        function applyRandomPreset() {
+            const a = Math.floor(Math.random() * 550) + 350; // 350 - 899
+            const b = Math.floor(Math.random() * (a - 150)) + 120; // smaller
+            applyPreset(a, b);
+        }
+
+        function stepSim(delta) {
+            playSound(delta > 0 ? 'pop' : 'pop');
+            simState.currentStep = Math.max(0, Math.min(simState.steps.length - 1, simState.currentStep + delta));
+            renderStep();
+        }
+
+        function toggleAutoPlay() {
+            if (simState.autoPlaying) {
+                stopAutoPlay();
+            } else {
+                startAutoPlay();
+            }
+        }
+
+        function startAutoPlay() {
+            simState.autoPlaying = true;
+            document.getElementById('autoIcon').className = "fa-solid fa-pause text-xs";
+            document.getElementById('autoText').innerText = "Hentikan";
+            
+            if (simState.currentStep === simState.steps.length - 1) {
+                simState.currentStep = 0;
+                renderStep();
+            }
+
+            simState.autoTimer = setInterval(() => {
+                if (simState.currentStep < simState.steps.length - 1) {
+                    simState.currentStep++;
+                    renderStep();
+                } else {
+                    stopAutoPlay();
+                }
+            }, 2500);
+        }
+
+        function stopAutoPlay() {
+            simState.autoPlaying = false;
+            if (simState.autoTimer) clearInterval(simState.autoTimer);
+            document.getElementById('autoIcon').className = "fa-solid fa-play text-xs";
+            document.getElementById('autoText').innerText = "Putar Otonom";
+        }
+
+        function renderStep() {
+            const step = simState.steps[simState.currentStep];
+            if (!step) return;
+
+            // Audio trigger on borrow step
+            if (step.bor1 !== '' || step.bor2 !== '') {
+                playSound('borrow');
+            }
+            if (simState.currentStep === simState.steps.length - 1) {
+                playSound('finish');
+            }
+
+            // Update Header & Badge
+            document.getElementById('stepBadge').innerText = `${step.badge} (${simState.currentStep}/3)`;
+            document.getElementById('stepTitle').innerHTML = step.title;
+            document.getElementById('stepDesc').innerHTML = step.desc;
+
+            // Update Formula tag
+            const formulaTag = document.getElementById('stepFormula');
+            if (step.formula) {
+                formulaTag.classList.remove('hidden');
+                formulaTag.innerHTML = `<span class="inline-block bg-emerald-100 text-emerald-800 font-fredoka font-bold text-xs px-2.5 py-1 rounded-lg border border-emerald-200">Formula: ${step.formula}</span>`;
+            } else {
+                formulaTag.classList.add('hidden');
+            }
+
+            // Dots indicator
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                if (i <= simState.currentStep) {
+                    dot.className = "w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse";
+                } else {
+                    dot.className = "w-2.5 h-2.5 rounded-full bg-slate-300";
+                }
+            }
+
+            // Highlight Active Column Headers
+            ['colLabel3', 'colLabel2', 'colLabel1'].forEach((id, idx) => {
+                const el = document.getElementById(id);
+                const colNum = 3 - idx;
+                if (step.activeCol === colNum) {
+                    el.classList.add('active-column', 'scale-105');
+                } else {
+                    el.classList.remove('active-column', 'scale-105');
+                }
+            });
+
+            // Render Digits
+            document.getElementById('digitA3').innerText = step.a3;
+            document.getElementById('digitA2').innerText = step.a2;
+            document.getElementById('digitA1').innerText = step.a1;
+
+            document.getElementById('digitB3').innerText = step.b3;
+            document.getElementById('digitB2').innerText = step.b2;
+            document.getElementById('digitB1').innerText = step.b1;
+
+            // Strikes
+            setStrike('digitA1', step.strike1);
+            setStrike('digitA2', step.strike2);
+            setStrike('digitA3', step.strike3);
+
+            // Borrows
+            document.getElementById('borrow1').innerText = step.bor1;
+            document.getElementById('borrow2').innerText = step.bor2;
+            document.getElementById('borrow3').innerText = step.bor3;
+
+            // Answers
+            setAnswer('ans1', step.ans1);
+            setAnswer('ans2', step.ans2);
+            setAnswer('ans3', step.ans3);
+
+            // Mascot Icon Update
+            const iconEl = document.getElementById('mascotIcon');
+            if (simState.currentStep === 0) iconEl.className = "fa-solid fa-face-smile";
+            else if (simState.currentStep === 3) iconEl.className = "fa-solid fa-trophy text-amber-500 animate-bounce";
+            else iconEl.className = "fa-solid fa-lightbulb text-amber-500";
+
+            // Visual Base-10 Chips Summary
+            const visualContainer = document.getElementById('visualBlocksBar');
+            visualContainer.innerHTML = `
+                <div class="bg-sky-100 text-sky-800 px-2.5 py-1 rounded-xl border border-sky-300">
+                    🟦 ${step.visual.r} Ratusan
+                </div>
+                <div class="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-xl border border-amber-300">
+                    🟨 ${step.visual.p} Puluhan
+                </div>
+                <div class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-xl border border-emerald-300">
+                    🟩 ${step.visual.s} Satuan
+                </div>
+            `;
+
+            // Button Control States
+            document.getElementById('btnPrev').disabled = simState.currentStep === 0;
+            const nextBtn = document.getElementById('btnNext');
+            if (simState.currentStep === simState.steps.length - 1) {
+                document.getElementById('nextText').innerText = "Selesai 🎉";
+                document.getElementById('nextIcon').className = "fa-solid fa-check text-xs";
+                nextBtn.className = "flex-1 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-fredoka font-bold text-sm shadow-md transition flex items-center justify-center gap-2";
+            } else {
+                document.getElementById('nextText').innerText = "Langkah Berikutnya";
+                document.getElementById('nextIcon').className = "fa-solid fa-arrow-right text-xs";
+                nextBtn.className = "flex-1 h-12 rounded-2xl bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-fredoka font-bold text-sm shadow-md transition flex items-center justify-center gap-2";
+            }
+        }
+
+        function setStrike(elementId, isStruck) {
+            const el = document.getElementById(elementId);
+            if (isStruck) {
+                el.classList.add('strike-through');
+            } else {
+                el.classList.remove('strike-through');
+            }
+        }
+
+        function setAnswer(elementId, val) {
+            const el = document.getElementById(elementId);
+            if (val !== '') {
+                el.innerText = val;
+                el.classList.remove('opacity-0');
+                el.classList.add('opacity-100', 'digit-pop');
+            } else {
+                el.innerText = '';
+                el.classList.add('opacity-0');
+                el.classList.remove('opacity-100', 'digit-pop');
+            }
+        }
+
+        /* ==========================================================================
+           3. MODAL DIALOG
+           ========================================================================== */
+        function showModal(title, body) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerText = body;
+
+            const modal = document.getElementById('appModal');
+            const content = document.getElementById('appModalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            playSound('pop');
+            const modal = document.getElementById('appModal');
+            const content = document.getElementById('appModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 180);
+        }
+
+        /* ==========================================================================
+           4. INITIALIZATION ON WINDOW LOAD
+           ========================================================================== */
+        window.onload = function() {
+            startCustomSim();
+        };
+    </script>
+</body>
+</html>
